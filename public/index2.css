@@ -1,0 +1,98 @@
+:root {
+    --bg: #f7fafc;
+    --card: #fff;
+    --accent: #2563eb;
+    --danger: #c2410c;
+    --muted: #475569
+}
+
+* {
+    box-sizing: border-box
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, Segoe UI, Roboto, -apple-system;
+    background: var(--bg);
+    color: #0f172a
+}
+
+.page {
+    max-width: 760px;
+    margin: 40px auto;
+    padding: 20px;
+    text-align: center
+}
+
+button {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer
+}
+
+.primary {
+    background: var(--accent);
+    color: #fff
+}
+
+.secondary {
+    background: #eef2ff;
+    color: #1e293b
+}
+
+.status {
+    margin-top: 12px;
+    color: var(--muted)
+}
+
+/* Modal / scroller */
+.modal.hidden {
+    display: none
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2, 6, 23, 0.45);
+    padding: 20px;
+    z-index: 9999
+}
+
+.modal-card {
+    width: 100%;
+    max-width: 520px;
+    background: var(--card);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 10px 30px rgba(2, 6, 23, 0.18);
+    text-align: left
+}
+
+.modal-card h2 {
+    margin: 0 0 8px
+}
+
+.scroller {
+    max-height: 220px;
+    overflow: auto;
+    padding: 8px 4px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    background: #fbfdff
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end
+}
+
+.modal-msg {
+    margin-top: 10px;
+    color: var(--danger);
+    font-size: 14px
+}
