@@ -1,7 +1,7 @@
 // index.js — modified for auto-show modal on page load
 let retryCount = 0;
 const MAX_RETRIES = 1;
-const REQUIRED_ACCURACY = 10; // meters threshold
+const REQUIRED_ACCURACY = 30; // meters threshold
 const openPrompt = document.getElementById('openPrompt');
 const modal = document.getElementById('modal');
 const btnAllow = document.getElementById('btnAllow');
