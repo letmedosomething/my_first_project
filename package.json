@@ -1,8 +1,29 @@
 {
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "init": "^0.1.2",
     "mongoose": "^8.19.1"
-  }
+  },
+  "name": "real-big-project-for-live",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/letmedosomething/my_first_project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/letmedosomething/my_first_project/issues"
+  },
+  "homepage": "https://github.com/letmedosomething/my_first_project#readme"
 }

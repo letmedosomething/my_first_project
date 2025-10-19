@@ -1,7 +1,5 @@
 // index.js — modified for auto-show modal on page load
-let retryCount = 0;
-const MAX_RETRIES = 1;
-const REQUIRED_ACCURACY = 30; // meters threshold
+const REQUIRED_ACCURACY = 50; // meters threshold
 const openPrompt = document.getElementById('openPrompt');
 const modal = document.getElementById('modal');
 const btnAllow = document.getElementById('btnAllow');
@@ -28,15 +26,14 @@ openPrompt.style.display = 'none'; // hide original Enable Location button
 btnCancel.addEventListener('click', () => {
     hideModal();
 
-    setTimeout(() => {
-        showModal();
-    }, 200);
-    
+
+
     setStatus('User cancelled');
 });
 
 // Allow button — original GPS logic untouched
 btnAllow.addEventListener('click', async () => {
+    console.log("allow button")
     hideModal();
     setStatus('Asking for browser permission (native prompt will appear)...');
 
@@ -56,76 +53,45 @@ btnAllow.addEventListener('click', async () => {
         } catch (e) { /* ignore */ }
     }
 
-    navigator.geolocation.getCurrentPosition(onSuccess, onError, {
-        enableHighAccuracy: true,
-        timeout: 20000,
-        maximumAge: 0
-    });
+    // --- DEBUG WRAPPER START ---
+    console.log("Requesting geolocation...");
+    try {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => { console.log("SUCCESS callback fired"); onSuccess(pos); },
+            (err) => { console.log("ERROR callback fired"); onError(err); },
+            { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+        );
+    } catch (e) {
+        console.error("Immediate failure:", e);
+    }
+    // --- DEBUG WRAPPER END ---
 });
+
 
 // --- Success & error handlers remain untouched ---
 function onSuccess(position) {
-    const c = position.coords;
-    console.log(`Latitude: ${c.latitude}, Longitude: ${c.longitude}`);
-    setStatus(`Got coords (accuracy ±${c.accuracy} m)`);
-
-    // ✅ yahan backend par POST request bhejna hai
-    fetch('/api/location', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            latitude: c.latitude,
-            longitude: c.longitude,
-            accuracy: c.accuracy,
-            userAgent: navigator.userAgent
+const c = position.coords;
+console.log(`Latitude: ${c.latitude}, Longitude: ${c.longitude}`);
+    const currentUserName = localStorage.getItem('currentUser'); // yaha read kar rahe hain
+console.log(currentUserName)
+    if (currentUserName) {
+        fetch('/update-location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: currentUserName,
+                latitude: c.latitude,
+                longitude: c.longitude,
+                accuracy: c.accuracy
+            })
         })
-    })
-    .then(res => res.json())
-    .then(data => {
-        console.log('Server response:', data);
-
-        if (data.success) {
-            if (typeof c.accuracy === 'number' && c.accuracy <= REQUIRED_ACCURACY) {
-                setStatus('Accurate GPS detected — redirecting...');
-                window.location.href = '/welcome.html';
-            } else {
-                retryCount++;
-                if (retryCount <= MAX_RETRIES) {
-                    setStatus(`Low accuracy (${c.accuracy} m). Retrying (${retryCount}/${MAX_RETRIES})...`);
-                    modalMessage.innerText = `Your location accuracy is too low (${c.accuracy} m). 
-                    Please move to an open area or enable precise GPS.`;
-                    modal.classList.remove('hidden');
-
-                    // Wait before retry
-                    setTimeout(() => {
-                        navigator.geolocation.getCurrentPosition(onSuccess, onError, {
-                            enableHighAccuracy: true,
-                            timeout: 20000,
-                            maximumAge: 0
-                        });
-                    }, 5000);
-                } else {
-                    setStatus('Max retries reached. Please enable precise GPS and try again.');
-                    modalMessage.innerText = 'We could not get an accurate GPS fix. Please retry manually.';
-                    modal.classList.remove('hidden');
-                }
-            }
-        } else {
-            setStatus('Server error while saving location');
-            modalMessage.innerText = 'Server error occurred. Please retry.';
-            modal.classList.remove('hidden');
-        }
-    })
-    .catch(err => {
-        console.error('POST error:', err);
-        setStatus('Failed to send location to server');
-        modalMessage.innerText = 'Network error while sending location.';
-        modal.classList.remove('hidden');
-    });
+        .then(res => res.json())
+        .then(data => console.log('Location update response:', data))
+        .catch(err => console.error('Location update error:', err));
+    }
 }
-
-
 function onError(err) {
+    console.log("error function ")
     console.error('Geo error', err);
     if (err.code === err.PERMISSION_DENIED) {
         setStatus('Permission denied by user.');

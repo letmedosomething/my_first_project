@@ -1,84 +1,88 @@
+
+
 const express = require('express');
+const path = require('path');
 const mongoose = require('mongoose');
-const path = require('path'); // path module for static files
+const bcrypt = require('bcrypt');
+const dotenv=require ('dotenv');
+dotenv.config(); 
+
+
+
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Middleware
-app.use(express.json()); // for POST JSON
-app.use(express.static(path.join(__dirname, 'public'))); // serve static files
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index2.html'));
-console.log("done");
+
+// ✅ Use imported schema
+const User = require("./scheema/user-data");
+
+mongoose.set('strictQuery', true);
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error(' MongoDB connection error:', err));
+
+
+
+// ✅ Register (store hashed password)
+app.post('/register', async (req, res) => {
+    const { name, password } = req.body;
+    if (!name || !password) return res.status(400).json({ ok: false, message: 'Missing' });
+
+    const exists = await User.findOne({ name });
+    if (exists) return res.status(409).json({ ok: false, message: 'User exists' });
+
+    const hash = await bcrypt.hash(password, 10);
+    await new User({ name, password: hash }).save();
+
+    res.json({ ok: true, message: 'Registered' });
+});
+
+// ✅ Login (check and redirect client-side)
+app.post('/login', async (req, res) => {
+    const { name, password } = req.body;
+    if (!name || !password) return res.status(400).json({ ok: false, message: 'Missing' });
+
+    const user = await User.findOne({ name });
+    if (!user) return res.status(401).json({ ok: false, message: 'Invalid' });
+
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) return res.status(401).json({ ok: false, message: 'Invalid' });
+
+    res.json({ ok: true, message: 'OK' });
 });
 
 
-// MongoDB connection
-mongoose.connect('mongodb://127.0.0.1:27017/myride', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+app.post('/update-location', async (req, res) => {
+    const { name, latitude, longitude, accuracy } = req.body;
+    const user = await User.findOne({ name });
+    if (!user) return res.status(404).json({ ok: false, message: 'User not found' 
+        
+    });
 
-// Example: location schema & model
-const locationSchema = new mongoose.Schema({
-    latitude: Number,
-    longitude: Number,
-    accuracy: Number,
-    timestamp: { type: Date, default: Date.now },
-    userAgent: String
-});
-const Location = mongoose.model('Location', locationSchema);
+    user.latitude = latitude;
+    user.longitude = longitude;
+    user.accuracy = accuracy || null;
+    user.userAgent = req.headers['user-agent'] || user.userAgent;
+    await user.save();
 
-// POST endpoint to save location
-app.post('/api/location', async (req, res) => {
-    console.log("API called");
-
-    try {
-        const { latitude, longitude, accuracy, userAgent } = req.body;
-
-        // ✅ Server time (UTC) le lo
-        const serverTimeUTC = new Date();
-
-        // ✅ Optional: Malaysia time (UTC+8)
-        const malaysiaTime = new Date(serverTimeUTC.getTime() + (8 * 60 * 60 * 1000));
-
-        // ✅ Store both times if you want traceability
-        const loc = new Location({
-            latitude,
-            longitude,
-            accuracy,
-            userAgent,
-            serverTimeUTC,
-            malaysiaTime
-        });
-
-        await loc.save();
-
-        res.json({
-            success: true,
-            message: 'Location saved with server time',
-            serverTimeUTC,
-            malaysiaTime
-        });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    res.json({ ok: true, message: 'Location updated' });
 });
 
 
-// GET route example (optional)
-// If you want /welcome.html or other pages handled via GET
-app.get('/welcome', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'welcome.html'));
+// ✅ Serve welcome page
+app.get('/info', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index2.html'));
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
-app.listen(5000, () => console.log('Server running on port 5000'));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+
+
+
+
+
+
